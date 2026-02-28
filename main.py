@@ -46,7 +46,7 @@ def search_flights(
     infants_in_seat: int = Query(0, ge=0, le=9),
     infants_on_lap: int = Query(0, ge=0, le=9),
     max_stops: Optional[int] = Query(None, ge=0, le=3, description="Max stops (0 = nonstop)"),
-    fetch_mode: Literal["common", "fallback", "force-fallback", "local"] = Query("fallback"),
+    fetch_mode: Literal["common", "fallback", "force-fallback", "local"] = Query("local"),
 ):
     if not DATE_RE.match(date):
         raise HTTPException(status_code=422, detail="date must be in YYYY-MM-DD format")
