@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:github.com)",
+      "Bash(docker exec:*)",
+      "WebFetch(domain:aweirddev.github.io)",
+      "Bash(./dev.sh rebuild:*)",
+      "Bash(curl:*)"
+    ]
+  }
+}

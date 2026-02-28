@@ -1,0 +1,4 @@
+fast-flights
+fastapi
+uvicorn[standard]
+playwright
