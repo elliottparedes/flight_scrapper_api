@@ -2,6 +2,7 @@ from typing import Literal, Optional
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fast_flights import FlightData, Passengers, get_flights
+from fast_flights.flights_impl import TFSData
 import re
 
 app = FastAPI(title="Fast Flights API", version="1.0.0")
@@ -16,12 +17,15 @@ app.add_middleware(
 DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
 
-def google_flights_url(from_airport: str, to_airport: str, date: str, return_date: Optional[str] = None) -> str:
-    if return_date:
-        query = f"flights from {from_airport} to {to_airport} on {date} returning {return_date}"
-    else:
-        query = f"flights from {from_airport} to {to_airport} on {date}"
-    return f"https://www.google.com/travel/flights?q={query.replace(' ', '+')}"
+def google_flights_url(flight_legs: list, trip: str, seat: str, passengers: Passengers) -> str:
+    tfs = TFSData.from_interface(
+        flight_data=flight_legs,
+        trip=trip,
+        seat=seat,
+        passengers=passengers,
+    )
+    tfs_param = tfs.as_b64().decode("utf-8")
+    return f"https://www.google.com/travel/flights?tfs={tfs_param}&hl=en&tfu=EgQIABABIgA"
 
 
 @app.get("/")
@@ -68,17 +72,19 @@ def search_flights(
     if trip == "round-trip":
         flight_legs.append(FlightData(date=return_date, from_airport=destination, to_airport=origin, max_stops=max_stops))
 
+    passengers = Passengers(
+        adults=adults,
+        children=children,
+        infants_in_seat=infants_in_seat,
+        infants_on_lap=infants_on_lap,
+    )
+
     try:
         result = get_flights(
             flight_data=flight_legs,
             trip=trip,
             seat=seat,
-            passengers=Passengers(
-                adults=adults,
-                children=children,
-                infants_in_seat=infants_in_seat,
-                infants_on_lap=infants_on_lap,
-            ),
+            passengers=passengers,
             fetch_mode=fetch_mode,
         )
     except Exception as e:
@@ -86,7 +92,7 @@ def search_flights(
 
     return {
         "price_level": result.current_price,
-        "book_url": google_flights_url(origin, destination, date, return_date),
+        "book_url": google_flights_url(flight_legs, trip, seat, passengers),
         "flights": [
             {
                 "name": f.name,
